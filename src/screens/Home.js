@@ -1,9 +1,10 @@
 import React, {Component} from "react";
-import { View, Button, Text, StyleSheet , SafeAreaView, Alert, ActivityIndicator, FlatList } from "react-native";
+import { View, Button, Text, StyleSheet , SafeAreaView, Alert, FlatList } from "react-native";
 
 import {getNews} from "../utils/news_api";
 import Article from '../components/Article';
 import { TouchableOpacity } from "react-native-gesture-handler";
+import Spinner from "../components/Spinner";
 //import { SafeAreaView } from 'react-native-safe-area-context';
 
 
@@ -39,9 +40,7 @@ class Home extends Component{
 
     return (
       <View style={styles.center}>
-        {this.state.isLoading && <View>
-          <ActivityIndicator animating={this.state.isLoading} />
-        </View>}
+        {this.state.isLoading && <Spinner/>} 
 
         {!this.state.isLoading && <FlatList
           data={this.state.data}
@@ -50,8 +49,6 @@ class Home extends Component{
                                       onPress={() => navigation.navigate('News', { item })} 
                                     />}
           keyExtractor={item => item.title}
-          //refreshing={this.state.refreshing}
-          //onRefresh={this.handleRefresh.bind(this)}
         />}
       </View>
     );

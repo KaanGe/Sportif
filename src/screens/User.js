@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import firebase from 'firebase';
-import { Text, StyleSheet, View, Button, TextInput, Alert, Switch } from "react-native";
+import { Text, StyleSheet, View, Button, TouchableOpacity, Alert, Switch } from "react-native";
 import Spinner from "../components/Spinner"
-import { getLocalItem, setLocalItem } from "../utils/local_storage";
+import { setLocal_reminderData, getLocal_reminderData } from "../utils/local_storage";
 import { setNotification, cancelNotification } from "../utils/push_notification";
-
+import NumericInput from "react-native-numeric-input";
 
 export default function User() {
 
@@ -16,9 +16,10 @@ export default function User() {
 
     const [user, setUser] = useState({  name: '', balance:0, })
     const [isLoading, setIsLoading] = useState(true)
-    const [hour, setHour] = useState('')
-    const [minute, setMinute] = useState('')
+    const [hour, setHour] = useState(18)
+    const [minute, setMinute] = useState(59)
     const [isEnabled, setIsEnabled] = useState(false);
+    const [isDisabledButton, setisDisabledButton] = useState(false);
 
     const userTable = firebase.firestore().collection('users').doc(currentUser.uid)
 
@@ -35,23 +36,23 @@ export default function User() {
             console.log("Error getting document:", error);
         });
 
+        setHour(getLocal_reminderData().hour ? getLocal_reminderData().hour : 9);
+        setHour(getLocal_reminderData().hour ? getLocal_reminderData().hour : 0);
+    }, []);
 
-    }, [])
-
-    toggleSwitch=()=>{
-        setIsEnabled(previous => !previous);
-        if(!isEnabled)
-        {
+    const toggleSwitch=()=>{
+        setIsEnabled(!isEnabled);
+        if(isEnabled)
+        {           
             cancelNotification();
         }
     }
 
-    setReminder=()=>{
-        if(hour != '' && minute != '')
-        {
-            setLocalItem('reminder',{hour:hour, minute:minute});
-            setNotification(hour,minute);
-        }
+    const setReminder=()=>{
+        setLocal_reminderData({hour:hour, minute:minute});
+        setNotification(hour,minute);
+        setisDisabledButton(true);
+        Alert.alert(`Hatırlatıcı ${hour}:${minute} şeklinde ayarlandı`);
     }
 
     if(isLoading){
@@ -63,23 +64,29 @@ export default function User() {
             <Text style={styles.textStyle}>Merhaba {user.name}</Text>
             <Text style={styles.textStyle}>Kalan Giriş Hakkınız {'\n\n'}{user.balance}</Text>
 
-            <Switch 
+            <Switch
                 value={isEnabled}
                 onValueChange={toggleSwitch}
                 />
             {isEnabled && <View> 
-                <TextInput placeholder="Saat" onChangeText={text=>setHour(text)} 
-                    value={getLocalItem('reminder').hour ? getLocalItem('reminder').hour : 18}/>
+                <NumericInput value={hour}
+                    onChange={text=>{setHour(text); 
+                                    setisDisabledButton(false)}}
+                    minValue={0}
+                    maxValue={23}
+                    valueType='integer'
+                    type='up-down'/>
+                <NumericInput value={minute}
+                    onChange={text=>{setMinute(text)
+                                    setisDisabledButton(false)}}
+                    minValue={0}
+                    maxValue={59}
+                    valueType='integer'
+                    type='up-down'
+                    />
 
-                <TextInput placeholder="Dakika" onChangeText={text=>setMinute(text)} 
-                    value={getLocalItem('reminder').minute ? getLocalItem('reminder').minute : 59}/>
+                <Button disabled={isDisabledButton} onPress={setReminder}  title="ayarla"/>
 
-                <Button onPress={setReminder}  title="ayarla"/>
-                <Button onPress={()=>{
-                    getLocalItem('reminder').then(res=>{
-                        Alert.alert(res.minute)
-                    })}
-                    }  title="oku"/> 
             </View>}
         </View>
 

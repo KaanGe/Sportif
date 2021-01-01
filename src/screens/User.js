@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
 import firebase from 'firebase';
-import { Text, StyleSheet, View, Button } from "react-native";
+import { Text, StyleSheet, View, Button, TextInput, Alert, Switch } from "react-native";
 import Spinner from "../components/Spinner"
+import { getLocalItem, setLocalItem } from "../utils/local_storage";
+import { setNotification, cancelNotification } from "../utils/push_notification";
+
 
 export default function User() {
 
@@ -13,6 +16,9 @@ export default function User() {
 
     const [user, setUser] = useState({  name: '', balance:0, })
     const [isLoading, setIsLoading] = useState(true)
+    const [hour, setHour] = useState('')
+    const [minute, setMinute] = useState('')
+    const [isEnabled, setIsEnabled] = useState(false);
 
     const userTable = firebase.firestore().collection('users').doc(currentUser.uid)
 
@@ -32,6 +38,21 @@ export default function User() {
 
     }, [])
 
+    toggleSwitch=()=>{
+        setIsEnabled(previous => !previous);
+        if(!isEnabled)
+        {
+            cancelNotification();
+        }
+    }
+
+    setReminder=()=>{
+        if(hour != '' && minute != '')
+        {
+            setLocalItem('reminder',{hour:hour, minute:minute});
+            setNotification(hour,minute);
+        }
+    }
 
     if(isLoading){
         return <Spinner />;
@@ -41,6 +62,25 @@ export default function User() {
         <View>
             <Text style={styles.textStyle}>Merhaba {user.name}</Text>
             <Text style={styles.textStyle}>Kalan Giriş Hakkınız {'\n\n'}{user.balance}</Text>
+
+            <Switch 
+                value={isEnabled}
+                onValueChange={toggleSwitch}
+                />
+            {isEnabled && <View> 
+                <TextInput placeholder="Saat" onChangeText={text=>setHour(text)} 
+                    value={getLocalItem('reminder').hour ? getLocalItem('reminder').hour : 18}/>
+
+                <TextInput placeholder="Dakika" onChangeText={text=>setMinute(text)} 
+                    value={getLocalItem('reminder').minute ? getLocalItem('reminder').minute : 59}/>
+
+                <Button onPress={setReminder}  title="ayarla"/>
+                <Button onPress={()=>{
+                    getLocalItem('reminder').then(res=>{
+                        Alert.alert(res.minute)
+                    })}
+                    }  title="oku"/> 
+            </View>}
         </View>
 
     )
